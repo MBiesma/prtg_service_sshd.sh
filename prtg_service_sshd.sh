@@ -1,20 +1,20 @@
 
 #!/bin/bash
 
-# Bepaal welke service bestaat: sshd of ssh
-if systemctl list-units --type=service | grep -q "^sshd.service"; then
+# Check which service exists (leading spaces in output → therefore grep without ^)
+if systemctl list-unit-files | grep -q "sshd.service"; then
     SERVICE="sshd"
-elif systemctl list-units --type=service | grep -q "^ssh.service"; then
+elif systemctl list-unit-files | grep -q "ssh.service"; then
     SERVICE="ssh"
 else
-    echo "FAILED: geen ssh/sshd service gevonden"
+    echo "FAILED"
     exit 1
 fi
 
-# Haal statusregel op
+# Retrieve service status
 status_line=$(systemctl status "$SERVICE" 2>/dev/null | grep "Active:")
 
-# Controleer of de service actief is
+# Check for active (running)
 if echo "$status_line" | grep -q "active (running)"; then
     echo "OK"
 else
