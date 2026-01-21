@@ -1,69 +1,67 @@
-# SSH Service Status Check Script
 
-**Version:** 1.0
-**Author:** Your Name
-**Date:** 2025-12-05
+# SSH/SSHD Service Check Script
 
----
+This script is designed to be used with monitoring systems such as PRTG to verify whether the SSH service is running on a Linux machine. It automatically detects whether the system uses `sshd.service` (common on older distributions) or `ssh.service` (as used on Ubuntu 24.04 and newer).
 
-## Description
+## Features
+- Automatically detects whether the system uses `sshd` or `ssh` as its SSH service.
+- Works even when the SSH service is disabled but present (e.g., socket-activated services).
+- Returns `OK` if the service is active and running, otherwise `FAILED`.
 
-This simple Bash script checks the status of the SSH service (`sshd`) on a Linux system. It:
-
-* Uses `systemctl` to get the current status of `sshd`
-* Checks if the service is `active (running)`
-* Prints `OK` if the service is running
-* Prints `FAILED` if the service is not running
-
----
-
-## Installation
-
-1. Save the script, for example:
-
-```bash
-sudo nano /opt/check-ssh.sh
-```
-
-Paste the script content and save.
-
-2. Make the script executable:
-
-```bash
-sudo chmod +x /opt/check-ssh.sh
-```
-
----
+## How It Works
+1. The script checks installed systemd unit files to determine whether the system provides `sshd.service` or `ssh.service`.
+2. Once detected, it queries the service status using `systemctl`.
+3. If the output contains `active (running)`, the script returns `OK`; otherwise, it returns `FAILED`.
 
 ## Usage
+Place the script in the following directory on a PRTG probe device:
+```
+/var/prtg/scripts/
+```
 
-Run the script:
-
+Make the script executable:
 ```bash
-sudo /opt/check-ssh.sh
+chmod +x prtg_service_sshd.sh
 ```
 
-Output will be either:
-
-```
-OK
-```
-
-or
-
-```
-FAILED
+Run it manually to test:
+```bash
+./prtg_service_sshd.sh
 ```
 
----
+Expected output:
+- `OK` → The SSH service is running.
+- `FAILED` → The SSH service is not running or not found.
 
-## Notes
+## Script
+```bash
+#!/bin/bash
 
-* The script must be run with sufficient privileges to query the SSH service.
-* Works on Linux systems using `systemd`.
+# Check which service exists (leading spaces in output → therefore grep without ^)
+if systemctl list-unit-files | grep -q "sshd.service"; then
+    SERVICE="sshd"
+elif systemctl list-unit-files | grep -q "ssh.service"; then
+    SERVICE="ssh"
+else
+    echo "FAILED"
+    exit 1
+fi
 
----
+# Retrieve service status
+status_line=$(systemctl status "$SERVICE" 2>/dev/null | grep "Active:")
+
+# Check for active (running)
+if echo "$status_line" | grep -q "active (running)"; then
+    echo "OK"
+else
+    echo "FAILED"
+fi
+```
+
+## Requirements
+- Linux system using systemd
+- Bash shell
+- Permissions to execute systemctl commands
 
 ## License
-
-This script is free to use and modify.
+This script may be used, modified, and distributed freely.
