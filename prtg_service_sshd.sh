@@ -1,4 +1,3 @@
-
 #!/bin/bash
 
 # Check which service exists (leading spaces in output → therefore grep without ^)
