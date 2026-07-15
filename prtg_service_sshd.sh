@@ -1,37 +1,28 @@
 #!/bin/bash
 # -----------------------------------------------------------------------------
 # Script: prtg_service_sshd.sh
-# Purpose: Check whether the SSH service is active (supports sshd or ssh).
-# Output: Prints ONLY "OK" or "FAILED" for machine-readability (e.g., SNMP).
-# Version: 1.3
+# Purpose: Check whether the SSH service is active (supports ssh.service or sshd.service).
+# Output: Prints ONLY "OK" or "FAILED" for machine-readability, e.g. PRTG/SNMP.
+# Version: 1.4
 # Author: © Mark Biesma
 # Notes:
-#   - Disables systemctl pager to avoid "Failed to print table: Broken pipe".
-#   - Avoids pipes for unit detection; checks units directly.
+#   - Checks both common SSH service names directly.
+#   - Avoids unreliable unit-file detection.
 #   - Suppresses stderr to keep output clean for monitoring systems.
 # -----------------------------------------------------------------------------
 
 set -euo pipefail
 
-# Ensure systemctl does not use a pager (prevents broken pipe warnings).
+# Ensure systemctl does not use a pager.
 export SYSTEMD_PAGER=cat
 export SYSTEMD_LESS=
 
-SERVICE=""
-
-# Detect which unit file exists (no pipes, no pager).
-if systemctl list-unit-files --no-pager sshd.service >/dev/null 2>&1; then
-    SERVICE="sshd"
-elif systemctl list-unit-files --no-pager ssh.service >/dev/null 2>&1; then
-    SERVICE="ssh"
+# Check whether either SSH service name is active.
+if systemctl is-active --quiet ssh.service 2>/dev/null || \
+   systemctl is-active --quiet sshd.service 2>/dev/null; then
+    echo "OK"
+    exit 0
 else
     echo "FAILED"
     exit 1
-fi
-
-# Machine-readable status check: only output OK or FAILED.
-if systemctl is-active --quiet "$SERVICE" 2>/dev/null; then
-    echo "OK"
-else
-    echo "FAILED"
 fi
